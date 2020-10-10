@@ -8,4 +8,5 @@ import (
 
 func Auth() {
 	http.HandleFunc("/api/auth/register", controllers.Register)
+	http.HandleFunc("/api/auth/login", controllers.Login)
 }

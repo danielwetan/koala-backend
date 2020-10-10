@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
+	jwt "github.com/dgrijalva/jwt-go"
+
 	"github.com/danielwetan/koala-backend/helpers"
+	"github.com/danielwetan/koala-backend/models"
 )
 
 func Register(w http.ResponseWriter, r *http.Request) {
@@ -36,6 +39,75 @@ func Register(w http.ResponseWriter, r *http.Request) {
 		body := "Register success"
 		res := helpers.ResponseMsg(true, body)
 		json.NewEncoder(w).Encode(res)
+	} else {
+		body := "Invalid HTTP method"
+		res := helpers.ResponseMsg(false, body)
+		json.NewEncoder(w).Encode(res)
+	}
+}
+
+func Login(w http.ResponseWriter, r *http.Request) {
+	helpers.Headers(&w)
+
+	if r.Method == "POST" {
+		r.ParseForm()
+
+		db, err := helpers.Connect()
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		defer db.Close()
+
+		/*
+					type User struct {
+				CustomerID   string `json:"customer_id"`
+				CustomerName string `json:"customer_name"`
+				Email        string `json:"email"`
+				PhoneNumber  string `json:"phone_number"`
+				Dob          int    `json:"dob"`
+				Sex          int    `json:"sex"`
+				Salt         string `json:"salt"`
+				Password     string `json:"password"`
+			}
+
+		*/
+
+		result := models.Customers{}
+		email, password := r.FormValue("email"), r.FormValue("password")
+		err = db.
+			QueryRow(helpers.Query["login"], email).
+			Scan(&result.CustomerID, &result.CustomerName, &result.Email, &result.PhoneNumber, &result.Dob, &result.Sex, &result.Salt, &result.Password, &result.CreatedAt)
+
+		match := helpers.CheckPasswordHash(password, result.Password)
+		if match {
+
+			const SECRET = "quatre vingt dix neuf heures"
+			sign := jwt.New(jwt.GetSigningMethod("HS256"))
+			token, err := sign.SignedString([]byte(SECRET))
+			if err != nil {
+				body := "Login failed!"
+				res := helpers.ResponseMsg(false, body)
+				json.NewEncoder(w).Encode(res)
+				return
+			}
+			const REFRESH = "bonjour comment ca va"
+			refreshSign := jwt.New(jwt.GetSigningMethod("HS256"))
+			refreshToken, err := refreshSign.SignedString([]byte(REFRESH))
+
+			body := map[string]string{
+				"accessToken":  token,
+				"refreshToken": refreshToken,
+			}
+
+			// return JWT token
+			res := helpers.ResponseMsg(true, body)
+			json.NewEncoder(w).Encode(res)
+		} else {
+			body := "Username or password is wrong!"
+			res := helpers.ResponseMsg(false, body)
+			json.NewEncoder(w).Encode(res)
+		}
 	} else {
 		body := "Invalid HTTP method"
 		res := helpers.ResponseMsg(false, body)
