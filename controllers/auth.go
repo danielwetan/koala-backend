@@ -59,20 +59,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		}
 		defer db.Close()
 
-		/*
-					type User struct {
-				CustomerID   string `json:"customer_id"`
-				CustomerName string `json:"customer_name"`
-				Email        string `json:"email"`
-				PhoneNumber  string `json:"phone_number"`
-				Dob          int    `json:"dob"`
-				Sex          int    `json:"sex"`
-				Salt         string `json:"salt"`
-				Password     string `json:"password"`
-			}
-
-		*/
-
 		result := models.Customers{}
 		email, password := r.FormValue("email"), r.FormValue("password")
 		err = db.
@@ -91,9 +77,16 @@ func Login(w http.ResponseWriter, r *http.Request) {
 				json.NewEncoder(w).Encode(res)
 				return
 			}
+
 			const REFRESH = "bonjour comment ca va"
 			refreshSign := jwt.New(jwt.GetSigningMethod("HS256"))
 			refreshToken, err := refreshSign.SignedString([]byte(REFRESH))
+			if err != nil {
+				body := "Login failed!"
+				res := helpers.ResponseMsg(false, body)
+				json.NewEncoder(w).Encode(res)
+				return
+			}
 
 			body := map[string]string{
 				"accessToken":  token,

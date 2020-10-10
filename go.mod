@@ -3,6 +3,7 @@ module github.com/danielwetan/koala-backend
 go 1.14
 
 require (
+	github.com/danielwetan/bonjour-go v0.0.0-20200901100831-f6e0bc2eae7c
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/google/uuid v1.1.2 // indirect
